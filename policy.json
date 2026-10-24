@@ -1,0 +1,11 @@
+{
+  "_comment": "VoxLocal читает этот файл раз в день. Если версия программы ниже min_version своей редакции или функция указана в disabled_features, функция выключается до обновления. Базовая диктовка не выключается. Функции: user_dictionaries.",
+  "ncase": {
+    "min_version": "1.0.0",
+    "disabled_features": []
+  },
+  "public": {
+    "min_version": "1.0.0",
+    "disabled_features": []
+  }
+}
