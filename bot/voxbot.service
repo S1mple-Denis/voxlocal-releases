@@ -1,0 +1,15 @@
+[Unit]
+Description=VoxLocal Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=botuser
+WorkingDirectory=/home/botuser/voxbot
+EnvironmentFile=/home/botuser/voxbot/.env
+ExecStart=/home/botuser/voxbot/venv/bin/python /home/botuser/voxbot/vox_bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
