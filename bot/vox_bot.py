@@ -10,6 +10,8 @@
   • Обмен словарями: пришлите боту файл .txt — бот даст ссылку
     t.me/<бот>?start=dict_<код>; по ней коллега получит файл.
   • /stats — сводка для администраторов; /myid — узнать свой Telegram ID.
+  • Отзывы: любое обычное сообщение (текст, скриншот, голосовое) пересылается
+    администраторам; ссылка с сайта — t.me/<бот>?start=feedback.
 
 Зависимости: только cryptography (pip install cryptography). Работает через
 long polling — серверу не нужны домен, HTTPS и открытые порты.
@@ -102,6 +104,16 @@ T = {
         "en": "VoxLocal dictionary. To use it: VoxLocal → Settings → My dictionaries → “Import dictionary” and pick this file.",
     },
     "dict_missing": {"ru": "Словарь по этой ссылке не найден.", "uk": "Словник за цим посиланням не знайдено.", "en": "No dictionary found for this link."},
+    "fb_prompt": {
+        "ru": "Напишите отзыв одним сообщением: что получилось, где программа ошиблась, идея или термин для словаря. Можно приложить скриншот или голосовое.",
+        "uk": "Напишіть відгук одним повідомленням: що вийшло, де програма помилилася, ідея чи термін для словника. Можна додати скриншот або голосове.",
+        "en": "Send your feedback in one message: what worked, where the app got it wrong, an idea or a dictionary term. Screenshots and voice notes are welcome.",
+    },
+    "fb_thanks": {
+        "ru": "Спасибо! Передал Денису — полезные идеи попадут в ближайшие обновления.",
+        "uk": "Дякуємо! Передав Денису — корисні ідеї потраплять у найближчі оновлення.",
+        "en": "Thank you! Passed on to Denys — useful ideas go into the next updates.",
+    },
     "bad_file": {
         "ru": "Нужен текстовый файл словаря .txt размером до 2 МБ.",
         "uk": "Потрібен текстовий файл словника .txt розміром до 2 МБ.",
@@ -303,8 +315,28 @@ def on_start(bot, con, key, msg, arg):
     if arg == "invite":
         send_invite(bot, user, chat_id)
         return
+    if arg == "feedback":
+        bot.send(chat_id, tr("fb_prompt", lang))
+        return
     bot.send(chat_id, tr("welcome", lang, setup=DL_SETUP, portable=DL_PORTABLE, channel=CHANNEL),
              buttons=main_buttons(lang))
+
+
+def on_feedback(bot, con, msg):
+    """Отзыв (текст, скриншот, голосовое) — администраторам."""
+    user, chat_id = msg["from"], msg["chat"]["id"]
+    touch_user(con, user)
+    event(con, user["id"], "feedback", (msg.get("text") or msg.get("caption") or "")[:500])
+    who = " ".join(x for x in (user.get("first_name"), user.get("last_name")) if x) or "без имени"
+    if user.get("username"):
+        who += " @" + user["username"]
+    for admin in ADMINS:
+        try:
+            bot.send(admin, f"💬 Отзыв о VoxLocal от {who} (id {user['id']}):")
+            bot.call("forwardMessage", chat_id=admin, from_chat_id=chat_id, message_id=msg["message_id"])
+        except Exception as e:
+            log.warning("отзыв администратору %s: %s", admin, e)
+    bot.send(chat_id, tr("fb_thanks", lang_of(user)))
 
 
 def on_document(bot, con, msg):
@@ -313,7 +345,7 @@ def on_document(bot, con, msg):
     touch_user(con, user)
     name = doc.get("file_name") or "dictionary.txt"
     if not name.lower().endswith(".txt") or doc.get("file_size", 0) > MAX_DICT_BYTES:
-        bot.send(chat_id, tr("bad_file", lang))
+        on_feedback(bot, con, msg)   # не словарь — скорее всего, файл к отзыву
         return
     did = secrets.token_urlsafe(6).replace("-", "x").replace("_", "y")
     con.execute("INSERT INTO dicts(id, owner, file_id, name, size, created) VALUES(?,?,?,?,?,?)",
@@ -323,6 +355,7 @@ def on_document(bot, con, msg):
     bot.send(chat_id, tr("shared", lang, name=name, link=f"https://t.me/{bot.username}?start=dict_{did}"))
 
 
+FB_COUNT = "SELECT count(*) FROM events WHERE kind='feedback'"
 NEW7 = "SELECT count(*) FROM users WHERE first_seen >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-7 days')"
 
 
@@ -334,7 +367,8 @@ def on_stats(bot, con, msg):
             f"С кодом Pro: {q('SELECT count(*) FROM users WHERE pro_at IS NOT NULL')}\n"
             f"Пришли по приглашению: {q('SELECT count(*) FROM users WHERE ref_by IS NOT NULL')}\n"
             f"Новых за 7 дней: {q(NEW7)}\n"
-            f"Словарей отправлено: {q('SELECT count(*) FROM dicts')}, открыто по ссылкам: {q('SELECT COALESCE(sum(opens),0) FROM dicts')}")
+            f"Словарей отправлено: {q('SELECT count(*) FROM dicts')}, открыто по ссылкам: {q('SELECT COALESCE(sum(opens),0) FROM dicts')}\n"
+            f"Отзывов: {q(FB_COUNT)}")
     top = con.execute("SELECT ref_by, count(*) c FROM users WHERE ref_by IS NOT NULL GROUP BY ref_by ORDER BY c DESC LIMIT 5").fetchall()
     if top:
         names = []
@@ -377,6 +411,13 @@ def handle(bot, con, key, upd):
         on_stats(bot, con, msg)
     elif text.startswith("/myid"):
         bot.send(msg["chat"]["id"], f"Ваш Telegram ID: {msg['from']['id']}")
+    elif text.startswith("/feedback"):
+        touch_user(con, msg["from"])
+        bot.send(msg["chat"]["id"], tr("fb_prompt", lang_of(msg["from"])))
+    elif text.startswith("/"):
+        on_start(bot, con, key, msg, "")
+    elif len(text) >= 3 or any(k in msg for k in ("photo", "voice", "video", "audio", "video_note")):
+        on_feedback(bot, con, msg)   # любое обычное сообщение — отзыв
     else:
         on_start(bot, con, key, msg, "")
 
