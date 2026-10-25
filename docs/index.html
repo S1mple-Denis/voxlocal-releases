@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>VoxLocal для NCase Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: липкая шапка (логотип · меню · кнопка) → первый экран: слева
+   заголовок «Говорите. Текст появляется сам.», справа «орб» — кольца с
+   бегущей дугой и статусом → «Что умеет» (3 карточки) → «Наглядно»
+   (секундомеры клавиатура vs голос) → «Как начать» (заголовок + шкала шагов,
+   ниже карточка скачивания) → «Советы» (6 карточек) → «Обратная связь»
+   (слева заголовок и лента отзывов, справа форма). Тёмная ночная гамма в
+   обеих темах — как в утверждённом макете. */
+:root {
+  --bg: #090b24;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(196, 181, 253, 0.28);
+  --fg: #eeecff;
+  --muted: #a6a5c8;
+  --dim: #7d7ca3;
+  --lav: #c4b5fd;
+  --violet: #7c5cfa;
+  --violet-2: #6a48f2;
+  --green: #9be36b;
+  --green-2: #b8f27c;
+  --warn: #ffcf7a;
+  --bad: #ff9eb8;
+  --font-display: "Unbounded", "Manrope", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
+:root[data-theme="dark"] { color-scheme: dark; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font-body); margin: 0; }
+body::before { /* неподвижное свечение: фиолетовое справа, синее слева внизу */
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(45vw 60vh at 88% 32%, rgba(72, 52, 210, 0.42), transparent 70%),
+    radial-gradient(30vw 40vh at -4% 104%, rgba(40, 90, 230, 0.38), transparent 70%),
+    var(--bg);
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+h1, h2 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; margin: 0; text-wrap: balance; }
+h2 { font-size: clamp(2rem, 4.4vw, 3.4rem); }
+h3 { font: 700 1.12rem/1.3 var(--font-body); margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--lav); }
+kbd { font: 500 0.92em var(--font-mono); color: var(--fg); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--lav); outline-offset: 3px; }
+[hidden] { display: none !important; }
+.label { font: 800 0.78rem var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--lav); }
+.muted { color: var(--muted); }
+
+/* ---------- кнопки ---------- */
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; padding: 14px 24px; font: 800 0.95rem var(--font-body); text-decoration: none; cursor: pointer; white-space: nowrap; }
+.btn-v { background: linear-gradient(180deg, var(--violet), var(--violet-2)); color: #fff; box-shadow: 0 10px 34px rgba(110, 80, 250, 0.45); }
+.btn-v[aria-disabled="true"], .btn-v:disabled { opacity: 0.5; box-shadow: none; cursor: default; }
+.btn-sm { padding: 10px 18px; font-size: 0.86rem; border-radius: 10px; }
+.btn-line { background: transparent; color: #fff; border: 1px solid var(--line-2); }
+.btn-line:disabled { opacity: 0.6; cursor: default; }
+.link-arrow { color: #fff; font-weight: 800; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.link-arrow:hover { color: var(--lav); }
+
+/* ---------- шапка ---------- */
+.nav { position: sticky; top: 0; z-index: 20; background: rgba(9, 11, 36, 0.72); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.nav .wrap { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.logo { display: inline-flex; align-items: center; gap: 10px; font: 800 1.2rem var(--font-display); letter-spacing: -0.04em; color: #fff; text-decoration: none; white-space: nowrap; }
+.logo img { width: 30px; height: 30px; display: block; }
+.logo b { color: var(--lav); font-weight: 800; }
+.menu { display: flex; gap: 32px; }
+.menu a { color: #e6e4ff; text-decoration: none; font-weight: 500; }
+.menu a:hover { color: #fff; }
+.nav .btn { justify-self: end; }
+.nav-r { justify-self: end; display: flex; align-items: center; gap: 14px; }
+.lang { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line-2); border-radius: 999px; background: rgba(9, 11, 36, 0.4); }
+.lang button { border: 0; background: none; color: var(--muted); font: 700 0.78rem/1 inherit; letter-spacing: 0.04em; padding: 7px 10px; border-radius: 999px; cursor: pointer; }
+.lang button:hover { color: #fff; }
+.lang button[aria-pressed="true"] { background: rgba(139, 108, 255, 0.38); color: #fff; }
+.os.port { border-color: rgba(163, 230, 53, 0.35); }
+
+/* ---------- первый экран ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr); gap: 32px; align-items: center; padding-block: clamp(48px, 10vh, 110px) clamp(56px, 10vh, 120px); }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px rgba(155, 227, 107, 0.8); flex: none; display: inline-block; }
+.hero h1 { font-size: clamp(2.2rem, 4.7vw, 4.2rem); line-height: 1.04; margin-top: 22px; }
+.hero h1 .l { color: var(--lav); display: block; }
+.hero .lead { font-size: clamp(1.05rem, 1.5vw, 1.32rem); color: #c9c8e6; margin-top: 30px; max-width: 30em; }
+.hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 34px; margin-top: 34px; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 34px; color: var(--muted); font-size: 0.95rem; }
+.checks span::before { content: "✓"; color: var(--green); font-weight: 800; margin-right: 9px; }
+.orb-wrap { display: grid; justify-items: center; gap: 26px; }
+.orb { width: min(360px, 80vw); aspect-ratio: 1; position: relative; }
+.orb::before { content: ""; position: absolute; inset: -14%; border-radius: 50%; background: radial-gradient(circle, rgba(110, 80, 250, 0.32), transparent 62%); }
+.orb svg { position: relative; width: 100%; height: 100%; overflow: visible; }
+.appbox { position: absolute; left: 50%; top: 50%; width: 64%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 1; border-radius: 23%;
+  background: radial-gradient(130% 95% at 50% 0%, #5c4776 0%, #3f2c56 36%, #22132d 72%, #170b1e 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -14px 34px rgba(0, 0, 0, 0.4), 0 18px 40px rgba(20, 8, 60, 0.6), 0 0 34px rgba(255, 110, 120, 0.16);
+  animation: float 6s ease-in-out infinite; transition: box-shadow 0.6s; }
+.orb[data-mode="process"] .appbox { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -14px 34px rgba(0, 0, 0, 0.4), 0 18px 40px rgba(20, 8, 60, 0.6), 0 0 52px rgba(255, 120, 140, 0.42); }
+.appbox canvas { position: absolute; left: 7%; top: 7%; width: 86%; height: 86%; display: block; }
+@keyframes float { 50% { transform: translate(-50%, calc(-50% - 8px)); } }
+.spin { transform-origin: 200px 200px; animation: spin 7s linear infinite; }
+.spin-r { transform-origin: 200px 200px; animation: spin 40s linear infinite reverse; }
+.orb[data-mode="process"] .spin { animation-duration: 1.4s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 10px 18px; font-weight: 500; min-width: 180px; justify-content: center; }
+.status[data-mode="process"] .dot { background: var(--lav); box-shadow: 0 0 10px rgba(196, 181, 253, 0.8); }
+
+/* ---------- разделы ---------- */
+section.block { padding-block: clamp(56px, 9vh, 100px); }
+.head { display: grid; gap: 18px; max-width: 900px; margin-bottom: 44px; }
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.card { position: relative; overflow: hidden; background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)); border: 1px solid var(--line); border-radius: 22px; padding: 32px; }
+.card::after { content: ""; position: absolute; right: -40px; bottom: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(124, 92, 250, 0.22), transparent 70%); pointer-events: none; }
+.card p { color: var(--muted); margin-top: 12px; }
+.card small { display: block; color: var(--dim); margin-top: 10px; font-size: 0.82rem; }
+.ico { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; background: rgba(124, 92, 250, 0.2); border: 1px solid var(--line-2); margin-bottom: 44px; color: #fff; }
+.tip { padding: 26px 28px; border-radius: 20px; }
+.tip p { margin-top: 10px; }
+
+/* ---------- пилот в цифрах ---------- */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 18px 0 56px; }
+.stat { border: 1px solid var(--line-2); border-radius: 22px; padding: 22px 26px; background: linear-gradient(160deg, rgba(124, 92, 250, 0.16), rgba(255, 255, 255, 0.02)); display: grid; gap: 4px; }
+.stat b { font: 800 clamp(2.2rem, 4vw, 3.2rem)/1 var(--font-display); letter-spacing: -0.05em; color: var(--lav); font-variant-numeric: tabular-nums; }
+.stat span { font-weight: 700; }
+.stat small { color: var(--dim); font-size: 0.82rem; }
+@media (max-width: 760px) { .stats { grid-template-columns: 1fr; } }
+
+/* ---------- словарь ---------- */
+.dict b { display: block; font: 800 clamp(2.6rem, 4.4vw, 3.6rem)/1 var(--font-display); letter-spacing: -0.05em; color: var(--lav); margin-bottom: 12px; }
+.dict-how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 26px; }
+.dict-how > div { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px; align-items: start; }
+.dict-how .dot { margin-top: 9px; }
+.dict-how p { color: var(--muted); }
+.dict-how b { color: var(--fg); }
+@media (max-width: 760px) { .dict-how { grid-template-columns: 1fr; } }
+
+/* ---------- видео ---------- */
+.vid { border: 1px solid var(--line-2); border-radius: 26px; overflow: hidden; background: #05061a; box-shadow: 0 30px 80px rgba(40, 20, 140, 0.35); aspect-ratio: 16 / 9; }
+.vid video { display: block; width: 100%; height: 100%; object-fit: contain; background: #05061a; }
+
+/* ---------- наглядно ---------- */
+.demo { border: 1px solid var(--line); border-radius: 26px; overflow: hidden; background: rgba(6, 8, 30, 0.6); }
+.demo-top { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 22px 34px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 1.08rem; }
+.demo-cols { display: grid; grid-template-columns: 1fr 1fr; }
+.demo-col { padding: 40px 34px 44px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.demo-col + .demo-col { border-left: 1px solid var(--line); background: linear-gradient(160deg, rgba(90, 60, 220, 0.16), transparent 70%); }
+.demo-col .k { font: 800 0.78rem var(--font-body); letter-spacing: 0.08em; color: var(--muted); }
+.timer { font: 800 clamp(2.6rem, 5vw, 4rem)/1 var(--font-display); letter-spacing: -0.05em; color: var(--lav); margin: 18px 0 22px; font-variant-numeric: tabular-nums; }
+.typed { color: var(--muted); min-height: 5.2em; font-size: 1.02rem; }
+.typed .caret { display: inline-block; width: 2px; height: 1.1em; vertical-align: -0.18em; background: var(--lav); margin-left: 1px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.said { color: #e9f6e2; min-height: 5.2em; font-size: 1.02rem; }
+.said mark { background: rgba(130, 200, 110, 0.24); color: inherit; padding: 2px 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.said .listen { color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+.win { color: var(--green-2); font-weight: 800; margin-top: 8px; min-height: 1.6em; }
+.demo-note { color: var(--dim); font-size: 0.82rem; margin-top: 14px; }
+
+/* ---------- как начать ---------- */
+.start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 34px; position: relative; counter-reset: s; }
+.timeline::before { content: ""; position: absolute; left: 21px; top: 22px; bottom: 6px; width: 1px; background: var(--line-2); }
+.timeline li { counter-increment: s; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 22px; position: relative; }
+.timeline li::before { content: counter(s); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.9rem; background: var(--bg); border: 1.5px solid rgba(160, 140, 255, 0.7); box-shadow: 0 0 14px rgba(124, 92, 250, 0.35); }
+.timeline h3 { margin-top: 6px; }
+.timeline p { color: var(--muted); margin-top: 8px; }
+.dl { margin-top: 56px; border: 1px solid var(--line-2); border-radius: 26px; padding: clamp(24px, 3.6vw, 44px); background: linear-gradient(150deg, rgba(90, 60, 220, 0.3), rgba(30, 24, 90, 0.25) 60%, rgba(255, 255, 255, 0.02)); display: grid; gap: 16px; }
+.dl h2 { font-size: clamp(1.6rem, 2.6vw, 2.1rem); }
+.os { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--line); background: rgba(9, 11, 36, 0.4); border-radius: 18px; padding: 22px 24px; flex-wrap: wrap; }
+.os b { display: block; font-size: 1.12rem; }
+.os span { color: var(--muted); font-size: 0.95rem; }
+.owner { border-top: 1px dashed var(--line-2); padding-top: 18px; display: grid; gap: 12px; }
+.owner .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+
+/* ---------- обратная связь ---------- */
+.fb { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+.fb .lead { color: #c9c8e6; font-size: 1.18rem; margin-top: 26px; max-width: 26em; }
+.fb-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-top: 40px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line-2); background: transparent; border-radius: 12px; padding: 10px 16px; font-weight: 700; font-size: 0.92rem; cursor: pointer; color: #dcdaf5; }
+.chip[aria-pressed="true"] { background: rgba(124, 92, 250, 0.3); border-color: rgba(170, 150, 255, 0.85); color: #fff; }
+.chip.sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 10px; }
+.feed { display: grid; margin-top: 18px; }
+.item { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 6px 16px; padding-block: 22px; border-bottom: 1px solid var(--line); }
+.av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: linear-gradient(160deg, #8f74ff, #5a3de0); grid-row: span 3; }
+.item .txt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.item .who { color: var(--dim); font-size: 0.86rem; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; grid-column: 2 / -1; }
+.pill { font-size: 0.72rem; font-weight: 800; border-radius: 999px; padding: 1px 9px; border: 1px solid currentColor; }
+.p-bug { color: var(--bad); } .p-idea { color: var(--lav); } .p-praise { color: var(--green); } .p-term { color: var(--warn); }
+.p-planned { color: var(--lav); } .p-progress { color: var(--warn); } .p-done { color: var(--green); } .p-declined { color: var(--dim); }
+.vote { align-self: start; border: 1px solid var(--line-2); background: transparent; border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; color: #e6e4ff; }
+.vote[aria-pressed="true"] { background: rgba(124, 92, 250, 0.32); border-color: rgba(170, 150, 255, 0.85); color: #fff; }
+.vote:disabled { cursor: default; opacity: 0.7; }
+.reply { grid-column: 2 / -1; border-left: 2px solid var(--violet); padding: 6px 12px; color: #d8d6f2; font-size: 0.93rem; background: rgba(124, 92, 250, 0.08); border-radius: 0 10px 10px 0; }
+.admin { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.admin select, .admin input { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font-size: 0.86rem; color: var(--fg); }
+.admin input { flex: 1 1 200px; }
+select option { background: #14163a; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--dim); text-decoration: underline; cursor: pointer; font-size: 0.84rem; }
+.empty { color: var(--muted); padding: 26px 0; border-bottom: 1px solid var(--line); }
+.more { margin-top: 18px; }
+.form { position: sticky; top: 100px; border: 1px solid var(--line); border-radius: 26px; padding: clamp(22px, 3vw, 32px); background: linear-gradient(170deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025)); display: grid; gap: 20px; }
+.form textarea { width: 100%; min-height: 150px; resize: vertical; background: rgba(9, 11, 36, 0.45); border: 1px solid var(--line-2); border-radius: 14px; padding: 16px 18px; font-size: 1.02rem; color: var(--fg); }
+.form textarea::placeholder { color: #8d8cb4; }
+.form-foot { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+.check { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 0.88rem; }
+.msg { font-size: 0.9rem; color: var(--muted); min-height: 1.4em; }
+.msg.err { color: var(--bad); }
+.notice { border: 1px dashed var(--line-2); border-radius: 14px; padding: 12px 14px; color: var(--muted); font-size: 0.92rem; }
+.field { width: 100%; background: rgba(9, 11, 36, 0.45); border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; color: var(--fg); }
+footer { color: var(--dim); font-size: 0.86rem; }
+footer .wrap { border-top: 1px solid var(--line); padding-block: 26px 44px; }
+
+@media (max-width: 980px) {
+  .hero, .start, .fb { grid-template-columns: 1fr; }
+  .orb-wrap { order: -1; } .orb { width: min(280px, 70vw); }
+  .form { position: static; }
+}
+@media (max-width: 760px) {
+  .menu { display: none; }
+  .nav .wrap { grid-template-columns: 1fr auto; }
+  .nav .btn { padding: 9px 14px; font-size: 0.8rem; }
+  .nav-r { gap: 8px; }
+  .nav-r .btn { display: none; }
+  .lang button { padding: 6px 7px; }
+  .logo { font-size: 1.05rem; }
+  .cards3, .demo-cols { grid-template-columns: 1fr; }
+  .demo-col + .demo-col { border-left: 0; border-top: 1px solid var(--line); }
+  .demo-top, .demo-col { padding-inline: 22px; }
+  .ico { margin-bottom: 26px; }
+  .card { padding: 26px 22px; }
+  .item { grid-template-columns: 36px minmax(0, 1fr); }
+  .av { width: 36px; height: 36px; grid-row: span 4; }
+  .vote { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .spin, .spin-r, .typed .caret, .appbox { animation: none !important; } }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top"><img alt="" width="30" height="30" src="data:image/webp;base64,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"><span>VOX <b>LOCAL</b></span></a>
+    <nav class="menu" aria-label="Разделы"><a href="#video" data-i="nav_video">Видео</a><a href="#features" data-i="nav_feat">Возможности</a><a href="#dictionary" data-i="nav_dict">Словарь</a><a href="#start" data-i="nav_start">Как начать</a><a href="#feedback" data-i="nav_fb">Отзывы</a></nav>
+    <div class="nav-r"><div class="lang" role="group" aria-label="Язык / Мова / Language"><button type="button" data-lang="ru" aria-pressed="true">RU</button><button type="button" data-lang="uk" aria-pressed="false">UA</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div><a class="btn btn-v btn-sm" href="#download" data-i="nav_dl">Скачать программу</a></div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <div class="eyebrow label" data-i="eyebrow"><span class="dot"></span>Пилот для NCase Team</div>
+      <h1 data-i="h1">Голос — <span class="l">самый быстрый способ</span> передать информацию</h1>
+      <p class="lead" data-i="lead">Диктуйте, а не печатайте — это в 3 раза быстрее. Любые запросы к AI — Claude, ChatGPT, Gemini и Copilot, письма и сообщения в мессенджерах.</p>
+      <div class="cta">
+        <a class="btn btn-v" id="dl-hero" href="#download">Скачать для Windows ↓</a>
+        <a class="link-arrow" href="#video" data-i="watch">▶ Смотреть видео · 1:40</a>
+      </div>
+      <div class="checks"><span data-i="ck1">Полностью офлайн</span><span data-i="ck2">Данные не покидают компьютер</span><span data-i="ck3">Переводит на английский</span><span data-i="ck4">Работает на удалённом рабочем столе (RDP)</span><span data-i="ck5">Свой словарь: фамилии с падежами и термины</span><span data-i="ck6">Без платных подписок и лимитов</span><span data-i="ck7">Можно без установки — portable</span></div>
+    </div>
+    <div class="orb-wrap" aria-hidden="true">
+      <div class="orb" id="orb" data-mode="listen">
+        <div class="appbox"><canvas id="ringcv"></canvas></div>
+        <svg viewBox="0 0 400 400">
+          <defs>
+            <linearGradient id="arc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9ccff"/><stop offset="1" stop-color="#8b6cff"/></linearGradient>
+            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <radialGradient id="core"><stop offset="0.55" stop-color="#ffffff"/><stop offset="1" stop-color="#e7e0ff"/></radialGradient>
+          </defs>
+          <circle cx="200" cy="200" r="186" fill="rgba(60,40,170,0.12)" stroke="rgba(196,181,253,0.38)" stroke-width="1.5"/>
+          <g class="spin"><circle cx="200" cy="200" r="186" fill="none" stroke="url(#arc)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="380 790" filter="url(#glow)"/></g>
+          <g class="spin-r"><circle cx="200" cy="200" r="160" fill="none" stroke="rgba(196,181,253,0.5)" stroke-width="1.2" stroke-dasharray="4 7"/></g>
+
+        </svg>
+      </div>
+      <div class="status" id="status" data-mode="listen"><span class="dot"></span><span id="status-t">Слушаю вас</span></div>
+    </div>
+  </div>
+
+  <section class="block" id="video" style="padding-top:0">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="v_label">Видео-инструкция</div><h2 data-i="v_h2">Как пользоваться — за полторы минуты</h2><p class="muted" style="font-size:1.08rem" data-i="v_p">Установка, выбор модели, запрос в Claude, 1С через удалённый рабочий стол, WeChat с переводом.</p></div>
+      <div class="vid"><video controls playsinline preload="metadata" src="voxlocal-video.mp4#t=0.5"></video></div>
+    </div>
+  </section>
+
+  <section class="block" id="features">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="f_label">Что умеет</div><h2 data-i="f_h2">Мысль — сразу в нужное поле</h2></div>
+      <div class="cards3">
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10z"/></svg></div><h3 data-i="f1_h">Пишет там, где курсор</h3><p data-i="f1_p">Claude, ChatGPT, Gemini, Copilot, Outlook, Telegram, Excel, 1С — любая программа на вашем компьютере.</p></div>
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M9 6h9v9"/></svg></div><h3 data-i="f2_h">Переводит на английский</h3><p data-i="f2_p">Начните со слов «Переведи на английский» и говорите по-русски или по-украински — в поле появится готовый английский текст.</p><small data-i="f2_s">На Mac уже работает, на Windows — в ближайшем обновлении.</small></div>
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></svg></div><h3 data-i="f3_h">Полностью офлайн</h3><p data-i="f3_p">Речь распознаётся прямо на компьютере, интернет не нужен. Вся ваша информация остаётся только у вас — ничего не уходит в облако.</p></div>
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><h3 data-i="f4_h">Работает на удалённом рабочем столе (RDP)</h3><p data-i="f4_p">Диктуйте в окно удалённого рабочего стола: 1С, почта и программы на сервере получают текст так же, как на вашем компьютере.</p></div>
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M9 4v2c0 4-2.5 7-5 8M6 10c1.5 2 3.5 3.5 6 4M13 20l4-9 4 9M14.5 17h5"/></svg></div><h3 data-i="f5_h">Три языка и пунктуация</h3><p data-i="f5_p">Русский, украинский, английский — без переключения раскладок. Точки, запятые и заглавные буквы программа расставляет сама.</p></div>
+        <div class="card"><div class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 5v16M9 8h6M9 12h4"/></svg></div><h3 data-i="f6_h">Ваш личный словарь</h3><p data-i="f6_p">Фамилии коллег, названия товаров, термины 1С — VoxLocal запоминает их и дальше пишет правильно. Свой словарь у каждого плюс общий словарь компании.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="unique">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="u_label">Только в VoxLocal</div><h2 data-i="u_h2">Ваш словарь — ваши слова</h2><p class="muted" style="font-size:1.12rem;max-width:46em" data-i="u_p">Фамилии коллег, названия товаров и термины вашей работы VoxLocal запоминает и дальше пишет правильно — у вас и у коллег, с которыми вы поделились словарём.</p></div>
+      <div class="cards3">
+        <div class="card dict"><b>01</b><h3 data-i="u1_h">Личный словарь и словарь компании</h3><p data-i="u1_p">Свои термины, фамилии и исправления — в своём словаре. Словарь компании подключается к нему и обновляется сам: новые сотрудники и термины появляются без вашего участия.</p></div>
+        <div class="card dict"><b>02</b><h3 data-i="u2_h">Фамилии — в правильном падеже</h3><p data-i="u2_p">Модель услышала «Гравцовой» — VoxLocal исправит на «Кравцовой» и сохранит падеж. Сделано для русского и украинского, где фамилии склоняются.</p></div>
+        <div class="card dict"><b>03</b><h3 data-i="u3_h">1С через удалённый рабочий стол</h3><p data-i="u3_p">Там, где обычная вставка в окно удалённого рабочего стола даёт одну букву, VoxLocal вставляет весь текст — в 1С, почту и программы на сервере.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="pro">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="p_label">VoxLocal Pro и Telegram</div><h2 data-i="p_h2">Pro — бесплатно за подписку на канал</h2><p class="muted" style="font-size:1.12rem;max-width:46em" data-i="p_p">Подпишитесь на Telegram-канал @voxlocal — там новости, обновления и советы. Бот @VoxLocal_bot проверит подписку и выдаст код Pro: свои словари, словарь компании и обмен словарями с коллегами.</p></div>
+      <div class="cards3">
+        <div class="card dict"><b>01</b><h3 data-i="p1_h">Свои словари и словарь компании</h3><p data-i="p1_p">Термины, фамилии коллег и исправления — в вашем словаре. Положите файл словаря компании в папку «Мои словари» — VoxLocal подхватит его сам.</p></div>
+        <div class="card dict"><b>02</b><h3 data-i="p2_h">Пригласить коллегу</h3><p data-i="p2_p">Введите e-mail или @ник в Telegram — откроется письмо или чат с готовым приглашением и ссылкой на бота.</p></div>
+        <div class="card dict"><b>03</b><h3 data-i="p3_h">Поделиться словарём</h3><p data-i="p3_p">Одна кнопка собирает ваши термины и фамилии в файл: отправьте его через бота или по почте. Коллега подключит его кнопкой «Импорт словаря».</p></div>
+      </div>
+      <div class="dict-how">
+        <div><span class="dot"></span><p data-i="ph1"><b>1. Откройте бота</b> по прямой ссылке <a href="https://t.me/VoxLocal_bot?start=pro" target="_blank" rel="noopener">t.me/VoxLocal_bot</a> — в поиске Telegram есть похожие чужие боты.</p></div>
+        <div><span class="dot"></span><p data-i="ph2"><b>2. Подпишитесь на <a href="https://t.me/voxlocal" target="_blank" rel="noopener">@voxlocal</a></b> и нажмите в боте «Проверить» — придёт код вида VOX1-…</p></div>
+        <div><span class="dot"></span><p data-i="ph3"><b>3. Вставьте код</b> в VoxLocal: Настройки → Общие → VoxLocal Pro → «Активировать». Там же кнопки «Пригласить коллегу» и «Поделиться словарём».</p></div>
+      </div>
+      <div class="cta" style="margin-top:26px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px">
+        <a class="btn btn-v" href="https://t.me/VoxLocal_bot?start=pro" target="_blank" rel="noopener" data-i="p_btn">Получить Pro в Telegram</a>
+        <a class="link-arrow" href="https://t.me/voxlocal" target="_blank" rel="noopener" data-i="p_ch">Канал @voxlocal →</a>
+      </div>
+      <p class="demo-note" data-i="p_note">Сотрудникам NCase: в корпоративной сборке с этой страницы Pro уже включён, код не нужен. Подпишитесь на канал, чтобы первыми узнавать об обновлениях.</p>
+    </div>
+  </section>
+
+  <section class="block" id="dictionary">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="d_label">Словарь NCase</div><h2 data-i="d_h2">Знает язык нашей компании</h2>
+        <p class="muted" style="font-size:1.12rem;max-width:44em" data-i="d_p">Обычные программы диктовки пишут «Одинес» вместо 1С и путают фамилии. В VoxLocal встроен общий словарь NCase: термины компании, фамилии коллег и исправления типичных ошибок. Он пополняется по вашим отзывам и сам учится на исправлениях.</p></div>
+      <div class="cards3">
+        <div class="card dict"><b>73</b><h3 data-i="d1_h">термина компании</h3><p data-i="d1_p">NCase, Proove, 1С, ДДС, ФОП, ГТД, УКТЗЕД, P&amp;L, Bitrix24, оприходование, инкассация, сверка касс, закрытие периода…</p></div>
+        <div class="card dict"><b>218</b><h3 data-i="d2_h">фамилий коллег</h3><p data-i="d2_p">Из оргструктуры Bitrix. Если модель услышит фамилию чуть иначе, VoxLocal поправит её и сохранит падеж: «Гравцовой» → «Кравцовой».</p></div>
+        <div class="card dict"><b>45</b><h3 data-i="d3_h">исправлений ошибок</h3><p data-i="d3_p">Реальные ошибки из журнала диктовок: «Одинес» → 1С, «Эн Кейс» → NCase, «Proof» → Proove.</p></div>
+      </div>
+      <div class="dict-how">
+        <div><span class="dot"></span><p data-i="dh1"><b>Учится на ваших правках.</b> Исправили слово после диктовки — выделите исправленный текст и нажмите <kbd>⌥</kbd> + <kbd>⇧</kbd> + <kbd>C</kbd>. VoxLocal сравнит и запомнит.</p></div>
+        <div><span class="dot"></span><p data-i="dh2"><b>Обновляется сам.</b> Раз в неделю словарь сверяется с базой знаний компании: новые коллеги и термины появляются без вашего участия.</p></div>
+        <div><span class="dot"></span><p data-i="dh3"><b>Нужен новый термин?</b> Напишите его боту @VoxLocal_bot — добавим в общий словарь для всех. <a href="https://t.me/VoxLocal_bot?start=feedback" target="_blank" rel="noopener">Предложить термин →</a></p></div>
+      </div>
+      <p class="demo-note" data-i="d_note">В Windows-версии словарь NCase — термины, фамилии коллег и исправления — встроен в программу и обновляется сам вместе с ней: ничего скачивать не нужно. Обучение на ваших исправлениях (⌥⇧C) пока есть только на Mac.</p>
+    </div>
+  </section>
+
+  <section class="block" id="demo">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="de_label">Наглядно</div><h2 data-i="de_h2">Длинный запрос: голосом быстрее</h2></div>
+      <div class="demo" id="demo-box">
+        <div class="demo-top"><span data-i="de_task">Задача: сформулировать запрос для AI</span><button class="btn btn-line btn-sm" id="demo-run" type="button" data-i="de_run">▶ Запустить пример</button></div>
+        <div class="demo-cols">
+          <div class="demo-col">
+            <div class="k" data-i="de_k1">С клавиатуры</div><h3 data-i="de_h1">Набрать мысль</h3>
+            <div class="timer" id="t-key">01:12</div>
+            <p class="typed" id="typed"></p>
+          </div>
+          <div class="demo-col">
+            <div class="k" data-i="de_k2">С VoxLocal</div><h3 data-i="de_h2b">Сказать мысль</h3>
+            <div class="timer" id="t-voice">00:17</div>
+            <p class="said" id="said"></p>
+            <p class="win" id="win" data-i="de_win">В 4 раза быстрее на этом примере</p>
+          </div>
+        </div>
+      </div>
+      <p class="demo-note" data-i="de_note">Расчёт по средней скорости: набор — около 40 слов в минуту, речь — около 130.</p>
+    </div>
+  </section>
+
+  <section class="block" id="start">
+    <div class="wrap">
+      <div class="start">
+        <div class="head" style="margin:0;align-content:start"><div class="label" data-i="s_label">Как начать</div><h2 data-i="s_h2">Пять минут — и можно говорить</h2><p class="muted" style="font-size:1.12rem" data-i="s_p">Подходит для обычного рабочего компьютера и удалённого рабочего стола.</p></div>
+        <ol class="timeline">
+          <li><div><h3 data-i="s1_h">Скачайте VoxLocal</h3><p data-i="s1_p">Кнопка ниже, в блоке «Начать работу»: установщик или версия без установки (portable ZIP).</p></div></li>
+          <li><div><h3 data-i="s2_h">Установите или просто распакуйте</h3><p data-i="s2_p"><b>Установщик:</b> если Windows покажет «Windows защитила ваш компьютер» — нажмите «Подробнее», затем «Выполнить в любом случае». <b>Portable:</b> распакуйте ZIP в любую папку или на флешку и запустите программу — права администратора не нужны.</p></div></li>
+          <li><div><h3 data-i="s3_h">Разрешите доступ к микрофону</h3><p data-i="s3_p">Это нужно, чтобы программа могла слышать вас.</p></div></li>
+          <li><div><h3 data-i="s4_h">Выберите модель и клавиши</h3><p data-i="s4_p">Обычный ноутбук — <b>Parakeet V3</b> (≈0,5 ГБ, быстрая: русский, украинский, английский). Говорите только по-русски — <b>GigaAM v3</b> (≈0,15 ГБ). Нужен перевод на английский — <b>Whisper Medium</b>. Модель скачивается один раз, сменить можно в настройках. Сочетание, например, <kbd>Ctrl</kbd> + <kbd>Space</kbd>.</p></div></li>
+          <li><div><h3 data-i="s5_h">Зажмите, скажите, отпустите</h3><p data-i="s5_p">Текст окажется там, где стоит курсор.</p></div></li>
+        </ol>
+      </div>
+      <div class="dl" id="download">
+        <h2 data-i="dl_h2">Начать работу</h2>
+        <p class="muted" data-i="dl_p">Версия для пилота доступна сотрудникам компании.</p>
+        <div class="os"><div><b>Windows</b><span id="win-sub">Windows 10 / 11 · рекомендуем</span></div><a class="btn btn-v btn-sm" id="dl-win" href="#download" aria-disabled="true">Скоро</a></div>
+        <div class="os port"><div><b data-i="dl_port_t">Windows · без установки</b><span data-i="dl_port_s">Portable ZIP: распакуйте в любую папку или на флешку — права администратора не нужны, настройки и модели хранятся рядом с программой</span></div><a class="btn btn-line btn-sm" id="dl-port" href="https://github.com/S1mple-Denis/voxlocal-releases/releases/latest/download/VoxLocal-portable.zip" target="_blank" rel="noopener" data-i="dl_port_b">Скачать ZIP ↓</a></div>
+        <div class="os"><div><b>macOS</b><span id="mac-sub">Apple Silicon · пока устанавливает Денис Иванов</span></div><a class="btn btn-v btn-sm" id="dl-mac" href="#download" aria-disabled="true">Скоро</a></div>
+        <p class="muted" style="font-size:.88rem" data-i="dl_note">Скачивание займёт около минуты. Установка — ещё 3–4 минуты.</p>
+    </div>
+  </section>
+
+  <section class="block" id="tips">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="t_label">Советы</div><h2 data-i="t_h2">Чтобы распознавание было точнее</h2></div>
+      <div class="cards3">
+        <div class="card tip"><h3 data-i="t1_h">Говорите фразами</h3><p data-i="t1_p">Пауза между предложениями помогает поставить знаки препинания естественно.</p></div>
+        <div class="card tip"><h3 data-i="t2_h">Не отпускайте раньше</h3><p data-i="t2_p">Сначала договорите, затем отпустите горячие клавиши — текст появится целиком.</p></div>
+        <div class="card tip"><h3 data-i="t3_h">Начните с AI</h3><p data-i="t3_p">Надиктуйте первый длинный запрос в Claude или ChatGPT: цель, контекст, формат ответа — разница ощущается сразу.</p></div>
+        <div class="card tip"><h3 data-i="t4_h">Удалённый рабочий стол</h3><p data-i="t4_p">В подключении включите буфер обмена: «Показать параметры» → «Локальные ресурсы» → «Буфер обмена». Вставляется одна буква — напишите нам.</p></div>
+        <div class="card tip"><h3 data-i="t5_h">Фамилии и термины</h3><p data-i="t5_p">Путает фамилию коллеги, товар или термин 1С? Отправьте отзыв с правильным написанием — добавим в общий словарь NCase.</p></div>
+        <div class="card tip"><h3 data-i="t6_h">Перевод на лету</h3><p data-i="t6_p">Скажите «Переведи на английский…» в начале фразы — письмо партнёру сразу получится на английском.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="feedback">
+    <div class="wrap">
+      <div class="label" data-i="fb_stats">Пилот в цифрах</div>
+      <div class="stats" id="stats">
+        <div class="stat"><b id="st-dl">—</b><span data-i="st1g">скачиваний программы</span><small data-i="st1g_s">установщик и portable с GitHub</small></div>
+        <div class="stat"><b id="st-runs">—</b><span data-i="st2g">проверок обновлений</span><small data-i="st2g_s">так установленные программы узнают о новых версиях</small></div>
+        <div class="stat"><b id="st-ver">—</b><span data-i="st3g">текущая версия</span><small id="st-ver-sub">&nbsp;</small></div>
+      </div>
+    </div>
+    <div class="wrap fb">
+      <div>
+        <div class="label" data-i="fb_label">Обратная связь</div>
+        <h2 style="margin-top:18px" data-i="fb_h2">Ваш опыт сделает VoxLocal лучше</h2>
+        <p class="lead" data-i="fb_lead">Расскажите, что сработало, что нет и какой сценарий вам нужен. Полезные идеи попадут в ближайшие обновления.</p>
+      </div>
+      <div class="form">
+        <div class="chips">
+          <span class="chip" data-i="k_praise">Сэкономило время</span>
+          <span class="chip" data-i="k_bug">Не распознало речь</span>
+          <span class="chip" data-i="k_idea">Есть идея</span>
+          <span class="chip" data-i="k_term">Термин для словаря</span>
+        </div>
+        <p data-i="fb_how">Напишите боту @VoxLocal_bot одним сообщением: что получилось, где программа ошиблась, идея или термин для словаря. Можно приложить скриншот или голосовое — Денис читает каждое сообщение.</p>
+        <div><a class="btn btn-v" href="https://t.me/VoxLocal_bot?start=feedback" target="_blank" rel="noopener" data-i="fb_btn">Написать отзыв в Telegram</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span data-i="footer">VoxLocal · пилот NCase Team · вопросы — Денис Иванов, CFO / AI Lead. Основано на открытом проекте Handy (MIT).</span></div></footer>
+
+<script src="app.js"></script>
+</body>
+</html>
