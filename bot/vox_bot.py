@@ -12,9 +12,14 @@
   • /stats — сводка для администраторов; /myid — узнать свой Telegram ID.
   • Отзывы: любое обычное сообщение (текст, скриншот, голосовое) пересылается
     администраторам; ссылка с сайта — t.me/<бот>?start=feedback.
+  • Анонимная статистика программы: приёмник POST /v1/ping (раз в день от каждой
+    установки: случайный номер, версия, число диктовок и секунд по дням) и
+    GET /v1/public (активные за день/неделю/месяц — для сайта). Слушает
+    VOXBOT_STATS_ADDR (по умолчанию 127.0.0.1:8787), снаружи — через Caddy (HTTPS).
+    Сводка — в /stats и каждое утро администраторам (VOXBOT_DIGEST_HOUR, Киев).
 
-Зависимости: только cryptography (pip install cryptography). Работает через
-long polling — серверу не нужны домен, HTTPS и открытые порты.
+Зависимости: только cryptography (pip install cryptography). Сам бот работает
+через long polling; HTTPS нужен только приёмнику статистики (Caddy впереди).
 
 Настройки — переменные окружения (файл .env рядом):
   VOXBOT_TOKEN    токен от @BotFather (обязательно)
@@ -38,8 +43,12 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime, timezone
+import re
+import threading
+from datetime import date, datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from logging.handlers import RotatingFileHandler
+from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("VOXBOT_DATA") or HERE
@@ -52,6 +61,9 @@ DL_PORTABLE = "https://github.com/S1mple-Denis/voxlocal-releases/releases/latest
 MAX_DICT_BYTES = 2 * 1024 * 1024
 CODE_PREFIX = "VOX1-"
 EPOCH = date(2026, 1, 1)
+STATS_ADDR = os.environ.get("VOXBOT_STATS_ADDR", "127.0.0.1:8787")
+DIGEST_HOUR = int(os.environ.get("VOXBOT_DIGEST_HOUR", "9"))
+KYIV = ZoneInfo("Europe/Kyiv")
 
 log = logging.getLogger("voxbot")
 
@@ -199,6 +211,12 @@ def db():
         created TEXT, opens INTEGER DEFAULT 0)""")
     con.execute("""CREATE TABLE IF NOT EXISTS events(
         ts TEXT, tg_id INTEGER, kind TEXT, data TEXT)""")
+    # анонимная статистика программы: установки и их дни с диктовками
+    con.execute("""CREATE TABLE IF NOT EXISTS installs(
+        id TEXT PRIMARY KEY, first_seen TEXT, last_seen TEXT, v TEXT, ed TEXT, os TEXT, since TEXT)""")
+    con.execute("""CREATE TABLE IF NOT EXISTS usage(
+        id TEXT, day TEXT, n INTEGER, s INTEGER, PRIMARY KEY(id, day))""")
+    con.commit()
     return con
 
 
@@ -223,6 +241,168 @@ def touch_user(con, user, ref_by=None):
 def event(con, uid, kind, data=""):
     con.execute("INSERT INTO events VALUES(?,?,?,?)", (now(), uid, kind, data))
     con.commit()
+
+
+# ---------------------------------------------------------------- статистика программы
+
+ID_RE = re.compile(r"^[0-9a-f]{24}$")
+DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+SHORT = lambda x: str(x)[:20] if isinstance(x, (str, int, float)) else ""
+
+
+def save_ping(con, data):
+    """Принять отметку от программы. Возвращает False, если данные не похожи на VoxLocal."""
+    pid = data.get("id")
+    days = data.get("days")
+    if not isinstance(pid, str) or not ID_RE.match(pid) or not isinstance(days, dict):
+        return False
+    today = datetime.now(KYIV).date()
+    ok_days = []
+    for d, c in list(days.items())[:40]:
+        if not isinstance(d, str) or not DAY_RE.match(d) or not isinstance(c, dict):
+            continue
+        try:
+            dd = date.fromisoformat(d)
+            n, sec = int(c.get("n", 0)), int(c.get("s", 0))
+        except (ValueError, TypeError):
+            continue
+        if abs((today - dd).days) > 31 or not (0 < n <= 5000) or not (0 <= sec <= 86400):
+            continue
+        ok_days.append((d, n, sec))
+    t = now()
+    row = con.execute("SELECT id FROM installs WHERE id=?", (pid,)).fetchone()
+    vals = (SHORT(data.get("v")), SHORT(data.get("ed")), SHORT(data.get("os")), SHORT(data.get("since")))
+    if row is None:
+        con.execute("INSERT INTO installs VALUES(?,?,?,?,?,?,?)", (pid, t, t) + vals)
+    else:
+        con.execute("UPDATE installs SET last_seen=?, v=?, ed=?, os=?, since=? WHERE id=?", (t,) + vals + (pid,))
+    for d, n, sec in ok_days:   # день мог прийти частично — берём максимум
+        con.execute("""INSERT INTO usage VALUES(?,?,?,?) ON CONFLICT(id, day)
+                       DO UPDATE SET n=max(n, excluded.n), s=max(s, excluded.s)""", (pid, d, n, sec))
+    con.commit()
+    return True
+
+
+def active(con, days, upto=None):
+    upto = upto or datetime.now(KYIV).date()
+    start = (upto - timedelta(days=days - 1)).isoformat()
+    return con.execute("SELECT count(DISTINCT id) FROM usage WHERE day BETWEEN ? AND ?",
+                       (start, upto.isoformat())).fetchone()[0]
+
+
+def public_stats(con):
+    today = datetime.now(KYIV).date()
+    return {"dau": active(con, 1, today - timedelta(days=1)), "wau": active(con, 7), "mau": active(con, 30),
+            "installs": con.execute("SELECT count(*) FROM installs").fetchone()[0],
+            "updated": now()}
+
+
+def usage_report(con):
+    today = datetime.now(KYIV).date()
+    y = (today - timedelta(days=1)).isoformat()
+    q = lambda sql, *a: con.execute(sql, a).fetchone()
+    n_y, s_y = q("SELECT COALESCE(sum(n),0), COALESCE(sum(s),0) FROM usage WHERE day=?", y)
+    dau_y = active(con, 1, today - timedelta(days=1))
+    wau, mau = active(con, 7), active(con, 30)
+    installs = q("SELECT count(*) FROM installs")[0]
+    new7 = q("SELECT count(*) FROM installs WHERE first_seen >= ?", (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec="seconds"))[0]
+    # удержание: из тех, кто начал 7–30 дней назад, сколько диктовали за последние 7 дней
+    old = [r[0] for r in con.execute("SELECT id FROM installs WHERE first_seen BETWEEN ? AND ?",
+                                      ((datetime.now(timezone.utc) - timedelta(days=30)).isoformat(timespec="seconds"),
+                                       (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(timespec="seconds")))]
+    kept = 0
+    if old:
+        start = (today - timedelta(days=6)).isoformat()
+        kept = sum(1 for i in old if con.execute("SELECT 1 FROM usage WHERE id=? AND day>=?", (i, start)).fetchone())
+    vers = con.execute("""SELECT v, count(*) FROM installs WHERE id IN
+                          (SELECT DISTINCT id FROM usage WHERE day >= ?) GROUP BY v ORDER BY v DESC LIMIT 5""",
+                       ((today - timedelta(days=6)).isoformat(),)).fetchall()
+    lines = ["📊 Программа (анонимно)",
+             f"Вчера диктовали: {dau_y} чел., диктовок {n_y}, ~{round(s_y / 60)} мин"
+             + (f" (в среднем {round(n_y / dau_y)} на человека)" if dau_y else ""),
+             f"Активных за 7 дней: {wau}, за 30 дней: {mau}",
+             f"Установок всего: {installs}, новых за 7 дней: {new7}"]
+    if old:
+        lines.append(f"Удержание: из начавших 7–30 дней назад пользуются {kept} из {len(old)} ({round(100 * kept / len(old))}%)")
+    if vers:
+        lines.append("Версии у активных: " + ", ".join(f"{v or '?'} — {c}" for v, c in vers))
+    return "\n".join(lines)
+
+
+class StatsHandler(BaseHTTPRequestHandler):
+    server_version = "VoxLocalStats"
+
+    def log_message(self, fmt, *args):
+        pass
+
+    def _reply(self, code, body=b"", ctype="application/json"):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path.split("?")[0] != "/v1/public":
+            return self._reply(404)
+        con = sqlite3.connect(DB_PATH, timeout=10)
+        try:
+            self._reply(200, json.dumps(public_stats(con)).encode())
+        finally:
+            con.close()
+
+    def do_POST(self):
+        if self.path != "/v1/ping":
+            return self._reply(404)
+        size = int(self.headers.get("Content-Length") or 0)
+        if not 0 < size <= 8192:
+            return self._reply(413)
+        try:
+            data = json.loads(self.rfile.read(size).decode())
+        except Exception:
+            return self._reply(400)
+        con = sqlite3.connect(DB_PATH, timeout=10)
+        try:
+            ok = isinstance(data, dict) and save_ping(con, data)
+        except Exception:
+            log.exception("приём статистики")
+            ok = False
+        finally:
+            con.close()
+        self._reply(200 if ok else 400, b'{"ok":true}' if ok else b'{"ok":false}')
+
+
+def start_stats_server():
+    host, _, port = STATS_ADDR.rpartition(":")
+    srv = ThreadingHTTPServer((host or "127.0.0.1", int(port)), StatsHandler)
+    threading.Thread(target=srv.serve_forever, name="stats", daemon=True).start()
+    log.info("приём статистики: http://%s", STATS_ADDR)
+
+
+def maybe_digest(bot, con, state={"day": None}):
+    """Утренняя сводка администраторам (раз в день, после DIGEST_HOUR по Киеву)."""
+    t = datetime.now(KYIV)
+    if t.hour < DIGEST_HOUR or state["day"] == t.date():
+        return
+    state["day"] = t.date()
+    done = con.execute("SELECT 1 FROM events WHERE kind='digest' AND data=?", (t.date().isoformat(),)).fetchone()
+    if done:
+        return
+    event(con, 0, "digest", t.date().isoformat())
+    for admin in ADMINS:
+        try:
+            bot.send(admin, usage_report(con))
+        except Exception as e:
+            log.warning("сводка %s: %s", admin, e)
 
 
 # ---------------------------------------------------------------- Telegram API
@@ -376,7 +556,7 @@ def on_stats(bot, con, msg):
             r = con.execute("SELECT username, name FROM users WHERE tg_id=?", (rid,)).fetchone()
             names.append(f"{('@' + r[0]) if r and r[0] else (r[1] if r else rid)} — {c}")
         text += "\nЛучшие приглашающие: " + ", ".join(names)
-    bot.send(msg["chat"]["id"], text)
+    bot.send(msg["chat"]["id"], text + "\n\n" + usage_report(con))
 
 
 def handle(bot, con, key, upd):
@@ -438,8 +618,16 @@ def main():
     bot.username = bot.call("getMe")["username"]
     con = db()
     log.info("VoxLocal bot @%s запущен, канал %s, открытый ключ %s", bot.username, CHANNEL, public_key_b64(key))
+    try:
+        start_stats_server()
+    except Exception:
+        log.exception("приёмник статистики не запущен")
     offset = None
     while True:
+        try:
+            maybe_digest(bot, con)
+        except Exception:
+            log.exception("сводка")
         try:
             updates = bot.call("getUpdates", offset=offset, timeout=50,
                                allowed_updates=["message", "callback_query"])
