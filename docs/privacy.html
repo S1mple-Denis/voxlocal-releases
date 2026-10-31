@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VoxLocal — политика конфиденциальности</title>
+<style>
+/* Одна колонка текста, три языка подряд с якорями #ru #uk #en.
+   Цвета — как на главной странице сайта (тёмная ночная гамма). */
+:root {
+  --bg: #090b24;
+  --fg: #eeecff;
+  --muted: #a6a5c8;
+  --line: rgba(255, 255, 255, 0.09);
+  --accent: #c4b5fd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+nav { display: flex; gap: 16px; margin-bottom: 24px; }
+a { color: var(--accent); }
+h1 { font-size: 28px; line-height: 1.25; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 28px 0 8px; }
+section { border-top: 1px solid var(--line); padding-top: 24px; margin-top: 40px; }
+section:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+.date { color: var(--muted); margin: 0 0 16px; }
+ul { padding-left: 20px; }
+li { margin: 4px 0; }
+code { font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="#ru">Русский</a><a href="#uk">Українська</a><a href="#en">English</a></nav>
+
+<section id="ru" lang="ru">
+<h1>Политика конфиденциальности VoxLocal</h1>
+<p class="date">Действует с 31.10.2026 · программа VoxLocal для Windows (в том числе из Microsoft Store)</p>
+<p>VoxLocal — программа голосового ввода. Разработчик — Иванов Денис, частное лицо. Главный принцип: речь распознаётся на вашем компьютере, звук и текст диктовок никуда не отправляются.</p>
+<h2>Микрофон, звук и текст</h2>
+<ul>
+<li>Микрофон включается только на время диктовки — по сочетанию клавиш.</li>
+<li>Звук обрабатывается в памяти компьютера и не сохраняется на диск.</li>
+<li>Распознанный текст вставляется туда, где стоит курсор. История диктовок не хранится.</li>
+<li>Звук и текст не передаются разработчику и третьим лицам.</li>
+</ul>
+<h2>Что программа загружает из интернета</h2>
+<ul>
+<li><b>Модели распознавания</b> — при первом выборе модели, с сервера проекта Handy (<code>blob.handy.computer</code>), на котором основан VoxLocal.</li>
+<li><b>Файл настроек функций</b> (<code>policy.json</code>) — раз в день с GitHub. Программа его только читает.</li>
+</ul>
+<h2>Анонимная статистика</h2>
+<p>Чтобы понимать, сколько людей пользуется программой, раз в день VoxLocal отправляет на сервер разработчика:</p>
+<ul>
+<li>случайный номер установки (не связан с вашим именем, аккаунтом или устройством);</li>
+<li>версию и редакцию программы, операционную систему, дату первого запуска;</li>
+<li>число диктовок и их общую длительность в секундах по дням (за последние 14 дней).</li>
+</ul>
+<p>Звук, текст, названия программ и файлов не отправляются. IP-адрес не сохраняется. Статистику можно выключить: Настройки → «Анонимная статистика». Общие цифры (сколько активных пользователей) показываются на сайте программы.</p>
+<h2>Telegram-бот и VoxLocal Pro</h2>
+<p>Если вы сами пишете боту <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a> (код Pro, отзыв, обмен словарём), бот получает от Telegram ваш ID, имя и то, что вы ему отправили. Это нужно, чтобы выдать код и ответить. Код Pro содержит ваш Telegram ID; программа проверяет код без интернета.</p>
+<h2>Внешние ИИ-службы</h2>
+<p>По умолчанию выключены. Если вы сами включите обработку текста внешней ИИ-службой и введёте свой ключ, текст будет отправляться этой службе по её правилам.</p>
+<h2>Данные на компьютере</h2>
+<p>Настройки, словари и модели хранятся в папке программы на вашем компьютере. В версии из Microsoft Store они удаляются вместе с программой.</p>
+<h2>Дети</h2>
+<p>Программа не предназначена для сбора данных детей и не собирает персональные данные.</p>
+<h2>Контакты и изменения</h2>
+<p>Вопросы — в Telegram: <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a>. Об изменениях политики сообщаем на этой странице, дата вверху меняется.</p>
+</section>
+
+<section id="uk" lang="uk">
+<h1>Політика конфіденційності VoxLocal</h1>
+<p class="date">Діє з 31.10.2026 · програма VoxLocal для Windows (зокрема з Microsoft Store)</p>
+<p>VoxLocal — програма голосового введення. Розробник — Іванов Денис, приватна особа. Головний принцип: мова розпізнається на вашому комп'ютері, звук і текст диктувань нікуди не надсилаються.</p>
+<h2>Мікрофон, звук і текст</h2>
+<ul>
+<li>Мікрофон вмикається лише на час диктування — за сполученням клавіш.</li>
+<li>Звук обробляється в пам'яті комп'ютера і не зберігається на диск.</li>
+<li>Розпізнаний текст вставляється туди, де стоїть курсор. Історія диктувань не зберігається.</li>
+<li>Звук і текст не передаються розробнику та третім особам.</li>
+</ul>
+<h2>Що програма завантажує з інтернету</h2>
+<ul>
+<li><b>Моделі розпізнавання</b> — під час першого вибору моделі, із сервера проєкту Handy (<code>blob.handy.computer</code>), на якому побудовано VoxLocal.</li>
+<li><b>Файл налаштувань функцій</b> (<code>policy.json</code>) — раз на день із GitHub. Програма його лише читає.</li>
+</ul>
+<h2>Анонімна статистика</h2>
+<p>Щоб розуміти, скільки людей користується програмою, раз на день VoxLocal надсилає на сервер розробника:</p>
+<ul>
+<li>випадковий номер встановлення (не пов'язаний з вашим ім'ям, обліковим записом чи пристроєм);</li>
+<li>версію та редакцію програми, операційну систему, дату першого запуску;</li>
+<li>кількість диктувань і їхню загальну тривалість у секундах по днях (за останні 14 днів).</li>
+</ul>
+<p>Звук, текст, назви програм і файлів не надсилаються. IP-адреса не зберігається. Статистику можна вимкнути: Налаштування → «Анонімна статистика». Загальні цифри (скільки активних користувачів) показуються на сайті програми.</p>
+<h2>Telegram-бот і VoxLocal Pro</h2>
+<p>Якщо ви самі пишете боту <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a> (код Pro, відгук, обмін словником), бот отримує від Telegram ваш ID, ім'я та те, що ви йому надіслали. Це потрібно, щоб видати код і відповісти. Код Pro містить ваш Telegram ID; програма перевіряє код без інтернету.</p>
+<h2>Зовнішні ШІ-служби</h2>
+<p>Типово вимкнені. Якщо ви самі ввімкнете обробку тексту зовнішньою ШІ-службою і введете свій ключ, текст надсилатиметься цій службі за її правилами.</p>
+<h2>Дані на комп'ютері</h2>
+<p>Налаштування, словники та моделі зберігаються в папці програми на вашому комп'ютері. У версії з Microsoft Store вони видаляються разом із програмою.</p>
+<h2>Діти</h2>
+<p>Програма не призначена для збору даних дітей і не збирає персональних даних.</p>
+<h2>Контакти та зміни</h2>
+<p>Питання — у Telegram: <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a>. Про зміни політики повідомляємо на цій сторінці, дата вгорі змінюється.</p>
+</section>
+
+<section id="en" lang="en">
+<h1>VoxLocal Privacy Policy</h1>
+<p class="date">Effective 31 October 2026 · VoxLocal for Windows (including the Microsoft Store version)</p>
+<p>VoxLocal is a voice typing app developed by Denys Ivanov, an individual developer. The core principle: speech is recognized on your computer; audio and dictated text are never sent anywhere.</p>
+<h2>Microphone, audio and text</h2>
+<ul>
+<li>The microphone is used only while you dictate, started by a keyboard shortcut.</li>
+<li>Audio is processed in memory and is not saved to disk.</li>
+<li>Recognized text is pasted at your cursor. Dictation history is not stored.</li>
+<li>Audio and text are not shared with the developer or any third party.</li>
+</ul>
+<h2>What the app downloads</h2>
+<ul>
+<li><b>Speech models</b> — when you first choose a model, from the server of the Handy project (<code>blob.handy.computer</code>) that VoxLocal is based on.</li>
+<li><b>Feature settings file</b> (<code>policy.json</code>) — once a day from GitHub. The app only reads it.</li>
+</ul>
+<h2>Anonymous statistics</h2>
+<p>To know how many people use the app, once a day VoxLocal sends to the developer's server:</p>
+<ul>
+<li>a random installation number (not linked to your name, account or device);</li>
+<li>app version and edition, operating system, date of first launch;</li>
+<li>the number of dictations and their total length in seconds per day (last 14 days).</li>
+</ul>
+<p>No audio, text, app or file names are sent. IP addresses are not stored. You can turn statistics off in Settings → “Anonymous statistics”. Aggregate numbers (active users) are shown on the app's website.</p>
+<h2>Telegram bot and VoxLocal Pro</h2>
+<p>If you message <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a> yourself (Pro code, feedback, sharing a dictionary), the bot receives your Telegram ID, name and what you send, in order to issue a code and reply. A Pro code contains your Telegram ID; the app verifies it offline.</p>
+<h2>External AI services</h2>
+<p>Off by default. If you turn on text processing by an external AI service and enter your own key, text is sent to that service under its own terms.</p>
+<h2>Data on your computer</h2>
+<p>Settings, dictionaries and models are stored in the app's folder on your computer. In the Microsoft Store version they are removed together with the app.</p>
+<h2>Children</h2>
+<p>The app is not directed at children and does not collect personal data.</p>
+<h2>Contact and changes</h2>
+<p>Questions: Telegram <a href="https://t.me/VoxLocal_bot">@VoxLocal_bot</a>. Changes to this policy are published on this page with an updated date.</p>
+</section>
+</main>
+</body>
+</html>
