@@ -127,12 +127,13 @@ section.block { padding-block: clamp(56px, 9vh, 100px); }
 .tip p { margin-top: 10px; }
 
 /* ---------- пилот в цифрах ---------- */
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 18px 0 56px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 18px 0 56px; }
 .stat { border: 1px solid var(--line-2); border-radius: 22px; padding: 22px 26px; background: linear-gradient(160deg, rgba(124, 92, 250, 0.16), rgba(255, 255, 255, 0.02)); display: grid; gap: 4px; }
 .stat b { font: 800 clamp(2.2rem, 4vw, 3.2rem)/1 var(--font-display); letter-spacing: -0.05em; color: var(--lav); font-variant-numeric: tabular-nums; }
 .stat span { font-weight: 700; }
 .stat small { color: var(--dim); font-size: 0.82rem; }
-@media (max-width: 760px) { .stats { grid-template-columns: 1fr; } }
+@media (max-width: 1080px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .stats { grid-template-columns: 1fr; } }
 
 /* ---------- словарь ---------- */
 .dict b { display: block; font: 800 clamp(2.6rem, 4.4vw, 3.6rem)/1 var(--font-display); letter-spacing: -0.05em; color: var(--lav); margin-bottom: 12px; }
@@ -242,6 +243,22 @@ footer .wrap { border-top: 1px solid var(--line); padding-block: 26px 44px; }
   .vote { grid-column: 2; justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .spin, .spin-r, .typed .caret, .appbox { animation: none !important; } }
+/* «Локально и быстро»: полосы времени распознавания — процессор и видеокарта */
+.speed { border: 1px solid var(--line); border-radius: 26px; background: rgba(6, 8, 30, 0.6); padding: 30px 34px; display: grid; gap: 26px; }
+.speed-model { display: grid; gap: 10px; }
+.speed-model h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 1.12rem; }
+.speed-x { font: 800 1.5rem var(--font-display); color: var(--green); }
+.speed-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.2em; align-items: center; gap: 12px; color: var(--muted); font-weight: 700; }
+.speed-row b { color: var(--fg); text-align: right; font-variant-numeric: tabular-nums; }
+.speed-bar { height: 14px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.speed-bar i { display: block; height: 100%; width: var(--w); border-radius: inherit; background: rgba(166, 165, 200, 0.55); animation: speedfill 1.4s ease-out both; }
+.speed-bar.gpu i { background: linear-gradient(90deg, var(--violet), var(--green)); }
+@keyframes speedfill { from { width: 0; } }
+@media (prefers-reduced-motion: reduce) { .speed-bar i { animation: none; } }
+@media (max-width: 640px) { .speed { padding: 22px 18px; } .speed-row { grid-template-columns: 6.8em minmax(0, 1fr) 3.6em; gap: 8px; font-size: 0.92rem; } }
+.speed-task { font: 800 0.78rem var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.speed-note { color: var(--dim); font-size: 0.95rem; margin-top: 14px; }
+.speed-how { margin-top: 18px; }
 </style>
 </head>
 <body>
@@ -378,6 +395,27 @@ footer .wrap { border-top: 1px solid var(--line); padding-block: 26px 44px; }
     </div>
   </section>
 
+  <section class="block" id="speed">
+    <div class="wrap">
+      <div class="head"><div class="label" data-i="sp_label">Локально и быстро</div><h2 data-i="sp_h2">Распознаёт ваш компьютер — а видеокарта ускоряет в 3 раза</h2><p class="muted" style="font-size:1.12rem;max-width:46em" data-i="sp_p">Речь не уходит в интернет: модель распознавания работает прямо на вашем компьютере. Если в нём есть видеокарта, VoxLocal считает на ней — в 2,5–3 раза быстрее, чем на процессоре.</p></div>
+      <div class="speed">
+        <div class="speed-task" data-i="sp_task">Запись 44 секунды — сколько секунд ждать текст</div>
+        <div class="speed-model">
+          <h3><span>Whisper Medium</span><span class="speed-x">×3,0</span></h3>
+          <div class="speed-row"><span data-i="sp_cpu">Процессор</span><div class="speed-bar"><i style="--w:100%"></i></div><b>12,5 <span data-i="sp_s">с</span></b></div>
+          <div class="speed-row"><span data-i="sp_gpu">Видеокарта</span><div class="speed-bar gpu"><i style="--w:34%"></i></div><b>4,2 <span data-i="sp_s">с</span></b></div>
+        </div>
+        <div class="speed-model">
+          <h3><span>Parakeet V3</span><span class="speed-x">×2,7</span></h3>
+          <div class="speed-row"><span data-i="sp_cpu">Процессор</span><div class="speed-bar"><i style="--w:19%"></i></div><b>2,4 <span data-i="sp_s">с</span></b></div>
+          <div class="speed-row"><span data-i="sp_gpu">Видеокарта</span><div class="speed-bar gpu"><i style="--w:7%"></i></div><b>0,9 <span data-i="sp_s">с</span></b></div>
+        </div>
+      </div>
+      <p class="speed-note" data-i="sp_note">Замер на MacBook с Apple M3: одна и та же запись, лучший из трёх прогонов, текст в обоих режимах одинаковый. На вашем компьютере цифры будут другими.</p>
+      <p class="speed-how" data-i="sp_how">Как включить: Настройки → Общие → «Чем распознавать» → «Авто» или «Видеокарта». По умолчанию уже стоит «Авто» — видеокарта, если она есть.</p>
+    </div>
+  </section>
+
   <section class="block" id="start">
     <div class="wrap">
       <div class="start">
@@ -418,8 +456,9 @@ footer .wrap { border-top: 1px solid var(--line); padding-block: 26px 44px; }
     <div class="wrap">
       <div class="label" data-i="fb_stats">Пилот в цифрах</div>
       <div class="stats" id="stats">
-        <div class="stat"><b id="st-dl">—</b><span data-i="st1g">скачиваний программы</span><small data-i="st1g_s">установщик и portable с GitHub</small></div>
-        <div class="stat"><b id="st-runs">—</b><span data-i="st2g">проверок обновлений</span><small data-i="st2g_s">так установленные программы узнают о новых версиях</small></div>
+        <div class="stat"><b id="st-act">—</b><span data-i="st4g">активных за неделю</span><small id="st-act-sub">диктовали хотя бы раз за 7 дней</small></div>
+        <div class="stat"><b id="st-dl">—</b><span data-i="st1g">скачиваний программы</span><small data-i="st1g_s">установщик и portable с сайта</small></div>
+        <div class="stat"><b id="st-runs">—</b><span data-i="st2g">автообновлений</span><small data-i="st2g_s">программа сама скачала новую версию</small></div>
         <div class="stat"><b id="st-ver">—</b><span data-i="st3g">текущая версия</span><small id="st-ver-sub">&nbsp;</small></div>
       </div>
     </div>

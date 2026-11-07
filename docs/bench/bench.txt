@@ -1,0 +1,33 @@
+# VoxLocal: замер скорости распознавания — видеокарта против процессора.
+# Запуск (PowerShell): irm https://s1mple-denis.github.io/voxlocal-releases/bench/bench.txt | iex
+# Перед запуском закройте VoxLocal (значок в трее → «Выйти»).
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$exe = Get-ChildItem "$env:LOCALAPPDATA\VoxLocal", "$env:LOCALAPPDATA\Programs\VoxLocal", "$env:ProgramFiles\VoxLocal" `
+    -Filter handy.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $exe) { Write-Host "Не нашёл установленный VoxLocal (handy.exe)." -ForegroundColor Red; return }
+if (Get-Process handy -ErrorAction SilentlyContinue) {
+    Write-Host "VoxLocal запущен — закройте его (трей → «Выйти») и запустите замер снова." -ForegroundColor Yellow; return
+}
+$wav = Join-Path $env:TEMP "voxlocal_speech_ru.wav"
+Invoke-WebRequest "https://s1mple-denis.github.io/voxlocal-releases/bench/speech_ru.wav" -OutFile $wav -UseBasicParsing
+$devices = & $exe.FullName --list-devices 2>$null | ForEach-Object {
+    if ($_ -match 'index=(\d+) kind=(\S+) name=(.+?) vram=') { [pscustomobject]@{ Index = [int]$Matches[1]; Kind = $Matches[2]; Name = $Matches[3] } }
+}
+$models = & $exe.FullName --list-models 2>$null | ForEach-Object { if ($_ -match '^  \S\s+(\S+)\s') { $Matches[1] } }
+if (-not $models) { Write-Host "Нет скачанных моделей — выберите модель в VoxLocal и дождитесь загрузки." -ForegroundColor Red; return }
+$cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name.Trim()
+$rows = foreach ($m in $models) {
+    foreach ($d in $devices) {
+        Write-Host "Замер: $m на $($d.Kind) $($d.Name)..."
+        $json = & $exe.FullName -f $wav --model $m --device-index $d.Index --repeat 3 --json 2>$null | Where-Object { $_ -like '{*' } | Select-Object -Last 1
+        if ($json) {
+            $r = $json | ConvertFrom-Json
+            [pscustomobject]@{ Модель = ($m -split '/')[-1]; Устройство = "$($d.Kind): $($d.Name)"; 'Время, с' = [math]::Round($r.best_ms / 1000, 2); Backend = $r.bound_backend }
+        }
+    }
+}
+$report = "VoxLocal замер ($env:COMPUTERNAME, процессор: $cpu), запись 44 с`n" + ($rows | Format-Table -AutoSize | Out-String)
+Write-Host $report
+$report | Set-Clipboard
+Write-Host "Результат скопирован в буфер обмена — вставьте его в чат с Claude." -ForegroundColor Green
